@@ -1,405 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Car Visualizer</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #0d0d14;
-      min-height: 100vh;
-      color: #e8e8e8;
-      padding: 20px;
-    }
-    .container { max-width: 860px; margin: 0 auto; }
-    header { text-align: center; padding: 50px 20px 40px; }
-    header h1 { font-size: 2.8em; font-weight: 700; letter-spacing: -1px; color: #fff; }
-    header h1 span { color: #4e8ef7; }
-    header p { margin-top: 10px; color: #888; font-size: 1em; }
-    .api-box {
-      background: #1a1a26; border: 1px solid #2a2a3e;
-      border-radius: 10px; padding: 16px 20px; margin-bottom: 24px;
-    }
-    .api-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .api-box label { font-size: 13px; color: #888; white-space: nowrap; }
-    .api-box input {
-      flex: 1; min-width: 220px; background: #0d0d14;
-      border: 1px solid #2a2a3e; border-radius: 7px;
-      padding: 9px 12px; color: #e8e8e8; font-size: 13px; font-family: monospace;
-    }
-    .api-box input:focus { outline: none; border-color: #4e8ef7; }
-    .api-hint { font-size: 12px; color: #555; margin-top: 8px; }
-    .api-hint a { color: #4e8ef7; text-decoration: none; }
-    .api-hint a:hover { text-decoration: underline; }
-    .search-wrap { display: flex; gap: 10px; margin-bottom: 16px; }
-    #searchInput {
-      flex: 1; padding: 14px 18px; background: #1a1a26;
-      border: 1px solid #2a2a3e; border-radius: 10px;
-      color: #e8e8e8; font-size: 1em;
-    }
-    #searchInput:focus { outline: none; border-color: #4e8ef7; }
-    #searchInput::placeholder { color: #555; }
-    #searchBtn {
-      padding: 14px 30px; background: #4e8ef7; color: white;
-      border: none; border-radius: 10px; font-size: 1em;
-      font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap;
-    }
-    #searchBtn:hover { background: #3a7df6; }
-    #searchBtn:disabled { background: #2a2a3e; color: #555; cursor: not-allowed; }
-    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
-    .sug-btn {
-      background: #1a1a26; border: 1px solid #2a2a3e; color: #aaa;
-      padding: 7px 14px; border-radius: 20px; font-size: 13px;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .sug-btn:hover { border-color: #4e8ef7; color: #4e8ef7; }
-    .empty-state {
-      background: #1a1a26; border: 1px dashed #2a2a3e;
-      border-radius: 12px; padding: 60px 20px;
-      text-align: center; color: #555; font-size: 15px;
-    }
-    .empty-icon { font-size: 48px; margin-bottom: 16px; }
-    .loading {
-      background: #1a1a26; border: 1px solid #2a2a3e;
-      border-radius: 12px; padding: 50px 20px;
-      text-align: center; color: #888; display: none;
-    }
-    .spinner {
-      width: 36px; height: 36px; border: 3px solid #2a2a3e;
-      border-top-color: #4e8ef7; border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .error-box {
-      background: #1e1218; border: 1px solid #5c2233; color: #ff4477;
-      border-radius: 10px; padding: 14px 18px; font-size: 14px;
-      margin-bottom: 20px; display: none;
-    }
-    .car-card {
-      background: #1a1a26; border: 1px solid #2a2a3e;
-      border-radius: 14px; overflow: hidden;
-      animation: fadeUp 0.5s ease; display: none;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .card-header {
-      padding: 24px; border-bottom: 1px solid #2a2a3e;
-      display: flex; gap: 20px; align-items: center;
-    }
-    .logo-box {
-      width: 80px; height: 80px; background: #fff;
-      border-radius: 12px; display: flex; align-items: center;
-      justify-content: center; flex-shrink: 0; overflow: hidden;
-    }
-    .logo-box img { width: 56px; height: 56px; object-fit: contain; }
-    .logo-fallback { font-size: 22px; font-weight: 700; color: #333; }
-    .car-title h2 { font-size: 1.6em; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-    .badge { font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
-    .badge-type   { background: #1b2f5e; color: #4e8ef7; }
-    .badge-origin { background: #1e261e; color: #5bc77a; }
-    .badge-year   { background: #2a1e3e; color: #c07af5; }
-    .tagline { font-size: 14px; color: #888; font-style: italic; }
-    .power-section { padding: 18px 24px; border-bottom: 1px solid #2a2a3e; }
-    .power-label {
-      display: flex; justify-content: space-between;
-      font-size: 13px; color: #888; margin-bottom: 8px;
-    }
-    .power-label span:last-child { font-family: monospace; color: #e8e8e8; font-weight: 600; }
-    .power-track { height: 8px; background: #0d0d14; border-radius: 4px; overflow: hidden; }
-    .power-fill {
-      height: 100%; background: linear-gradient(90deg, #4e8ef7, #c07af5);
-      border-radius: 4px; width: 0%; transition: width 1s ease;
-    }
-    .power-ends { display: flex; justify-content: space-between; font-size: 11px; color: #444; margin-top: 4px; }
-    .specs-section { padding: 20px 24px; border-bottom: 1px solid #2a2a3e; }
-    .section-title {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: #555; margin-bottom: 14px;
-    }
-    .specs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
-    .spec-item { background: #0d0d14; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; }
-    .spec-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
-    .spec-value { font-size: 14px; font-weight: 600; color: #e8e8e8; font-family: 'Courier New', monospace; }
-    .char-section { padding: 20px 24px; border-bottom: 1px solid #2a2a3e; }
-    .char-list { display: flex; flex-direction: column; gap: 12px; }
-    .char-item { display: flex; gap: 12px; align-items: flex-start; }
-    .char-tag {
-      background: #1b2f5e; color: #4e8ef7; font-size: 12px;
-      font-weight: 600; padding: 4px 10px; border-radius: 20px;
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .char-desc { font-size: 14px; color: #888; line-height: 1.5; padding-top: 2px; }
-    .card-footer { padding: 14px 24px; display: flex; justify-content: flex-end; }
-    .reset-btn {
-      background: transparent; border: 1px solid #2a2a3e; color: #888;
-      padding: 8px 18px; border-radius: 8px; font-size: 13px;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .reset-btn:hover { border-color: #4e8ef7; color: #4e8ef7; }
-    @media (max-width: 600px) {
-      header h1 { font-size: 2em; }
-      .card-header { flex-direction: column; align-items: flex-start; }
-      .search-wrap { flex-direction: column; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Car Visualizer V2</title>
+<style>
+body{font-family:Segoe UI,sans-serif;margin:0;color:#eee;background:linear-gradient(135deg,#080812,#131326,#1f1f38);background-size:400% 400%;animation:showroom 15s ease infinite}
+@keyframes showroom{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.container{max-width:1100px;margin:auto;padding:20px}
+.card,.panel{background:#1a1a26;border:1px solid #2a2a3e;border-radius:12px;padding:16px;margin-bottom:16px}
+input,button{padding:12px;border-radius:8px;border:1px solid #333}
+input{width:100%;background:#111;color:white}
+button{cursor:pointer;background:#4e8ef7;color:white}
+.row{display:flex;gap:10px}
+#carImage{width:100%;max-height:350px;object-fit:cover;border-radius:10px;display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.spec{background:#111;padding:10px;border-radius:8px}
+</style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <h1>Car <span>Visualizer</span></h1>
-    <p>Search any car — exotic, classic, or everyday — to explore its specs and identity.</p>
-  </header>
+<h1>🚗 Car Visualizer V2</h1>
 
-  <div class="api-box">
-    <div class="api-row">
-      <label for="apiKey">🔑 Groq API Key:</label>
-      <input type="password" id="apiKey" placeholder="gsk_..." />
-    </div>
-    <div class="api-hint">
-      Free key → <a href="https://console.groq.com/keys" target="_blank">console.groq.com</a> → API Keys → Create API Key
-    </div>
-  </div>
+<div class="panel">
+<h3>My Garage</h3>
+<div id="garage"></div>
+</div>
 
-  <div class="search-wrap">
-    <input type="text" id="searchInput" placeholder="e.g. Ferrari F40, Tesla Model S Plaid, 1969 Dodge Charger..." />
-    <button id="searchBtn" onclick="searchCar()">Search →</button>
-  </div>
+<div class="card">
+<input id="apiKey" placeholder="Groq API Key">
+<br><br>
+<div class="row">
+<input id="searchInput" placeholder="Ferrari F40">
+<button onclick="searchCar()">Search</button>
+<button onclick="saveFavorite()">⭐ Save</button>
+</div>
+</div>
 
-  <div class="suggestions">
-    <button class="sug-btn" onclick="quickSearch('Ferrari F40')">Ferrari F40</button>
-    <button class="sug-btn" onclick="quickSearch('Bugatti Chiron')">Bugatti Chiron</button>
-    <button class="sug-btn" onclick="quickSearch('McLaren P1')">McLaren P1</button>
-    <button class="sug-btn" onclick="quickSearch('Tesla Model S Plaid')">Tesla Model S Plaid</button>
-    <button class="sug-btn" onclick="quickSearch('Toyota Supra MK4')">Toyota Supra MK4</button>
-    <button class="sug-btn" onclick="quickSearch('Lamborghini Aventador')">Lamborghini Aventador</button>
-  </div>
+<div class="panel">
+<h3>Search History</h3>
+<div id="history"></div>
+</div>
 
-  <div class="error-box" id="errorBox"></div>
-
-  <div class="loading" id="loadingBox">
-    <div class="spinner"></div>
-    <p>Scanning the garage...</p>
-  </div>
-
-  <div class="empty-state" id="emptyState">
-    <div class="empty-icon">🚗</div>
-    <p>Enter any car above to see its full specs and character profile.</p>
-  </div>
-
-  <div class="car-card" id="carCard">
-    <div class="card-header">
-      <div class="logo-box" id="logoBox">
-        <img id="logoImg" src="" alt="Car logo" onerror="showLogoFallback()" />
-      </div>
-      <div class="car-title">
-        <h2 id="carName"></h2>
-        <div class="meta">
-          <span class="badge badge-type"   id="carType"></span>
-          <span class="badge badge-year"   id="carYear"></span>
-          <span class="badge badge-origin" id="carOrigin"></span>
-        </div>
-        <p class="tagline" id="carTagline"></p>
-      </div>
-    </div>
-    <div class="power-section">
-      <div class="power-label">
-        <span>Power output</span>
-        <span id="powerLabel">0 hp</span>
-      </div>
-      <div class="power-track">
-        <div class="power-fill" id="powerFill"></div>
-      </div>
-      <div class="power-ends"><span>0 hp</span><span>1,500 hp</span></div>
-    </div>
-    <div class="specs-section">
-      <p class="section-title">Specifications</p>
-      <div class="specs-grid" id="specsGrid"></div>
-    </div>
-    <div class="char-section">
-      <p class="section-title">Character</p>
-      <div class="char-list" id="charList"></div>
-    </div>
-    <div class="card-footer">
-      <button class="reset-btn" onclick="resetSearch()">Search another car</button>
-    </div>
-  </div>
+<div class="card" id="carCard" style="display:none">
+<img id="carImage">
+<h2 id="carName"></h2>
+<p id="carTagline"></p>
+<div id="carClass"></div>
+<div style="background:#111;height:10px;border-radius:6px">
+<div id="powerFill" style="height:10px;width:0;background:#4e8ef7"></div>
+</div>
+<p id="powerLabel"></p>
+<div class="grid" id="specsGrid"></div>
+</div>
 </div>
 
 <script>
-  const BRAND_DOMAINS = {
-    ferrari:"ferrari.com", lamborghini:"lamborghini.com", porsche:"porsche.com",
-    bmw:"bmw.com", mercedes:"mercedes-benz.com", audi:"audi.com",
-    tesla:"tesla.com", toyota:"toyota.com", honda:"honda.com",
-    ford:"ford.com", chevrolet:"chevrolet.com", dodge:"dodge.com",
-    nissan:"nissan.com", mazda:"mazda.com", volkswagen:"vw.com",
-    bentley:"bentley.com", bugatti:"bugatti.com", mclaren:"mclaren.com",
-    "aston martin":"astonmartin.com", jaguar:"jaguar.com",
-    koenigsegg:"koenigsegg.com", pagani:"pagani.com",
-    maserati:"maserati.com", "alfa romeo":"alfaromeo.com",
-    hyundai:"hyundai.com", kia:"kia.com", lexus:"lexus.com",
-    cadillac:"cadillac.com", subaru:"subaru.com", volvo:"volvocars.com",
-    fiat:"fiat.com", renault:"renault.com", peugeot:"peugeot.com",
-    mitsubishi:"mitsubishi-motors.com", "rolls-royce":"rolls-royce.com",
-  };
+let favorites=JSON.parse(localStorage.getItem('garage')||'[]');
+let historyData=JSON.parse(localStorage.getItem('history')||'[]');
 
-  const SPEC_LABELS = {
-    engine:"Engine", power:"Power", torque:"Torque",
-    acceleration:"0–100 km/h", topSpeed:"Top Speed",
-    weight:"Weight", drivetrain:"Drivetrain"
-  };
-
-  function getLogoUrl(make) {
-    const key = make.toLowerCase().trim();
-    const domain = BRAND_DOMAINS[key] || (key.replace(/[\s-]+/g,"") + ".com");
-    return "https://logo.clearbit.com/" + domain;
-  }
-
-  function show(id) { document.getElementById(id).style.display = "block"; }
-  function hide(id) { document.getElementById(id).style.display = "none"; }
-
-  document.getElementById("searchInput").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") searchCar();
-  });
-
-  function quickSearch(name) {
-    document.getElementById("searchInput").value = name;
-    searchCar();
-  }
-
-  function resetSearch() {
-    hide("carCard");
-    show("emptyState");
-    document.getElementById("searchInput").value = "";
-    document.getElementById("searchInput").focus();
-  }
-
-  function showLogoFallback() {
-    const make = document.getElementById("carName").textContent.split(" ")[0];
-    document.getElementById("logoBox").innerHTML =
-      '<span class="logo-fallback">' + make.substring(0,2).toUpperCase() + '</span>';
-  }
-
-  function showError(msg) {
-    const box = document.getElementById("errorBox");
-    box.textContent = msg;
-    show("errorBox");
-    setTimeout(() => hide("errorBox"), 7000);
-  }
-
-  async function searchCar() {
-    const query = document.getElementById("searchInput").value.trim();
-    const apiKey = document.getElementById("apiKey").value.trim();
-
-    if (!query) return;
-    if (!apiKey) { showError("Please enter your Groq API key first."); return; }
-
-    hide("emptyState");
-    hide("carCard");
-    hide("errorBox");
-    show("loadingBox");
-    document.getElementById("searchBtn").disabled = true;
-
-    const systemMsg = `You are a car encyclopedia. Always respond with ONLY a valid JSON object. No markdown, no backticks, no explanation. Use exactly this structure:
-{
-  "make": "Brand name only",
-  "model": "Model name and trim",
-  "year": "Year or year range",
-  "type": "Supercar, Hypercar, Sports Car, Sedan, SUV, Coupe, Muscle Car, Hot Hatch, etc.",
-  "origin": "Country of manufacture",
-  "specs": {
-    "engine": "e.g. 3.9L Twin-Turbo V8",
-    "power": "XXX hp",
-    "torque": "XXX Nm",
-    "acceleration": "X.X sec",
-    "topSpeed": "XXX km/h",
-    "weight": "XXXX kg",
-    "drivetrain": "RWD, FWD, AWD, or 4WD"
-  },
-  "characteristics": [
-    {"label": "Short trait", "desc": "One sentence about this trait."},
-    {"label": "Short trait", "desc": "One sentence about this trait."},
-    {"label": "Short trait", "desc": "One sentence about this trait."}
-  ],
-  "tagline": "A punchy 5-8 word essence of this car",
-  "powerHp": 500
+function renderGarage(){
+ document.getElementById('garage').innerHTML=favorites.join('<br>')||'No saved cars';
 }
-powerHp is numeric horsepower as an integer. Return valid JSON only.`;
+function renderHistory(){
+ document.getElementById('history').innerHTML=historyData.slice(-10).reverse().join('<br>')||'No searches';
+}
+renderGarage();renderHistory();
 
-    try {
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + apiKey
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          temperature: 0.3,
-          messages: [
-            { role: "system", content: systemMsg },
-            { role: "user",   content: "Car: " + query }
-          ]
-        })
-      });
+function getClass(hp){
+ if(hp>=1000)return 'Hypercar';
+ if(hp>=700)return 'Supercar';
+ if(hp>=350)return 'Sports Car';
+ return 'Road Car';
+}
 
-      const data = await response.json();
+async function searchCar(){
+ const query=document.getElementById('searchInput').value.trim();
+ const apiKey=document.getElementById('apiKey').value.trim();
+ if(!query||!apiKey)return alert('Enter car and API key');
 
-      if (!response.ok) {
-        throw new Error(data.error?.message || "API error. Check your key.");
-      }
+ historyData.push(query);
+ localStorage.setItem('history',JSON.stringify(historyData));
+ renderHistory();
 
-      let text = data.choices?.[0]?.message?.content || "";
-      text = text.replace(/```json|```/g, "").trim();
-      const car = JSON.parse(text);
-      renderCar(car);
+ const systemMsg=`Return JSON only:
+ {"make":"","model":"","year":"","type":"","origin":"","tagline":"","powerHp":500,
+ "imageUrl":"",
+ "specs":{"engine":"","power":"","torque":"","topSpeed":"","weight":"","drivetrain":""}}`;
 
-    } catch (err) {
-      showError("Error: " + (err.message || "Could not load that car. Try again."));
-      show("emptyState");
-    } finally {
-      hide("loadingBox");
-      document.getElementById("searchBtn").disabled = false;
-    }
-  }
+ const response=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+ method:"POST",
+ headers:{
+ "Content-Type":"application/json",
+ "Authorization":"Bearer "+apiKey
+ },
+ body:JSON.stringify({
+ model:"llama-3.3-70b-versatile",
+ messages:[
+ {role:"system",content:systemMsg},
+ {role:"user",content:"Car:"+query}
+ ]
+ })
+ });
 
-  function renderCar(car) {
-    document.getElementById("carName").textContent    = car.make + " " + car.model;
-    document.getElementById("carType").textContent    = car.type;
-    document.getElementById("carYear").textContent    = car.year;
-    document.getElementById("carOrigin").textContent  = car.origin;
-    document.getElementById("carTagline").textContent = '"' + car.tagline + '"';
+ const data=await response.json();
+ let text=data.choices[0].message.content.trim();
+ text=text.replace(/```json|```/g,'');
+ const car=JSON.parse(text);
 
-    document.getElementById("logoBox").innerHTML =
-      '<img id="logoImg" src="' + getLogoUrl(car.make) +
-      '" alt="' + car.make + ' logo" onerror="showLogoFallback()" />';
+ document.getElementById('carCard').style.display='block';
+ document.getElementById('carName').textContent=car.make+" "+car.model;
+ document.getElementById('carTagline').textContent=car.tagline;
+ document.getElementById('carClass').textContent=getClass(car.powerHp);
 
-    const pct = Math.min(100, Math.round((car.powerHp / 1500) * 100));
-    document.getElementById("powerLabel").textContent = car.powerHp + " hp";
-    setTimeout(() => { document.getElementById("powerFill").style.width = pct + "%"; }, 100);
+ document.getElementById('powerLabel').textContent=car.powerHp+" hp";
+ document.getElementById('powerFill').style.width=Math.min(100,car.powerHp/15)+'%';
 
-    const specsGrid = document.getElementById("specsGrid");
-    specsGrid.innerHTML = "";
-    for (const [key, value] of Object.entries(car.specs)) {
-      specsGrid.innerHTML +=
-        '<div class="spec-item"><div class="spec-label">' + (SPEC_LABELS[key] || key) +
-        '</div><div class="spec-value">' + value + '</div></div>';
-    }
+ if(car.imageUrl){
+  const img=document.getElementById('carImage');
+  img.src=car.imageUrl;
+  img.style.display='block';
+ }
 
-    const charList = document.getElementById("charList");
-    charList.innerHTML = "";
-    for (const c of car.characteristics) {
-      charList.innerHTML +=
-        '<div class="char-item"><span class="char-tag">' + c.label +
-        '</span><p class="char-desc">' + c.desc + '</p></div>';
-    }
+ let html='';
+ for(const [k,v] of Object.entries(car.specs)){
+   html+=`<div class="spec"><b>${k}</b><br>${v}</div>`;
+ }
+ document.getElementById('specsGrid').innerHTML=html;
+}
 
-    show("carCard");
-  }
+function saveFavorite(){
+ const name=document.getElementById('carName').textContent;
+ if(!name)return;
+ favorites.push(name);
+ localStorage.setItem('garage',JSON.stringify(favorites));
+ renderGarage();
+}
 </script>
 </body>
 </html>
