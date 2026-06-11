@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Car Visualizer V2</title>
 <style>
-<style>
 *{
   margin:0;
   padding:0;
@@ -243,6 +242,28 @@ header p{
 
   gap:20px;
 }
+  button{
+  padding:12px 18px;
+  border:none;
+  border-radius:12px;
+  background:#4e8ef7;
+  color:white;
+  cursor:pointer;
+  transition:.3s;
+}
+
+button:hover{
+  transform:translateY(-2px);
+}
+
+#apiKey{
+  width:100%;
+  padding:16px;
+  border-radius:12px;
+  border:1px solid #333;
+  background:#111;
+  color:white;
+}
 
 @media(max-width:768px){
 
@@ -264,43 +285,166 @@ header p{
 
 }
 </style>
-</style>
 </head>
 <body>
 <div class="container">
-<h1>🚗 Car Visualizer V2</h1>
+
+<header>
+    <h1>Car <span>Visualizer</span></h1>
+
+    <p>
+        Search any car — exotic, classic,
+        electric, SUV, hypercar or daily driver.
+    </p>
+</header>
 
 <div class="panel">
-<h3>My Garage</h3>
-<div id="garage"></div>
-</div>
 
-<div class="card">
-<input id="apiKey" placeholder="Groq API Key">
-<br><br>
-<div class="row">
-<input id="searchInput" placeholder="Ferrari F40">
-<button onclick="searchCar()">Search</button>
-<button onclick="saveFavorite()">⭐ Save</button>
-</div>
+    <h2 style="margin-bottom:20px;">
+        ⭐ My Garage
+    </h2>
+
+    <div
+      id="garage"
+      class="garage-grid">
+    </div>
+
 </div>
 
 <div class="panel">
-<h3>Search History</h3>
-<div id="history"></div>
+
+    <input
+      id="apiKey"
+      placeholder="Groq API Key">
+
+    <br><br>
+
+    <div class="search-wrap">
+
+        <input
+          id="searchInput"
+          placeholder="Search any car...">
+
+        <button
+          id="searchBtn"
+          onclick="searchCar()">
+
+            Search →
+
+        </button>
+
+    </div>
+
+    <div
+      style="
+      margin-top:15px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;">
+
+        <button onclick="quickSearch('Ferrari F40')">
+            Ferrari F40
+        </button>
+
+        <button onclick="quickSearch('Bugatti Chiron')">
+            Bugatti Chiron
+        </button>
+
+        <button onclick="quickSearch('McLaren P1')">
+            McLaren P1
+        </button>
+
+        <button onclick="quickSearch('Toyota Supra MK4')">
+            Supra MK4
+        </button>
+
+        <button onclick="quickSearch('Porsche 911 GT3 RS')">
+            Porsche GT3 RS
+        </button>
+
+    </div>
+
 </div>
 
-<div class="card" id="carCard" style="display:none">
-<img id="carImage">
-<h2 id="carName"></h2>
-<p id="carTagline"></p>
-<div id="carClass"></div>
-<div style="background:#111;height:10px;border-radius:6px">
-<div id="powerFill" style="height:10px;width:0;background:#4e8ef7"></div>
+<div class="panel">
+
+    <h2 style="margin-bottom:15px;">
+        📜 Search History
+    </h2>
+
+    <div id="history"></div>
+
 </div>
-<p id="powerLabel"></p>
-<div class="grid" id="specsGrid"></div>
+
+<div
+class="car-card"
+id="carCard"
+style="display:none">
+
+    <img
+      id="carImage"
+      class="car-image">
+
+    <div class="card-header">
+
+        <h2 id="carName">
+        </h2>
+
+        <p
+          id="carTagline"
+          style="
+          color:#aaa;
+          margin-top:10px;">
+        </p>
+
+        <br>
+
+        <span
+          id="carClass"
+          style="
+          background:#4e8ef7;
+          padding:8px 15px;
+          border-radius:30px;
+          font-weight:bold;">
+        </span>
+
+        <br><br>
+
+        <div
+          class="power-bar">
+
+            <div
+              id="powerFill"
+              class="power-fill">
+            </div>
+
+        </div>
+
+        <p
+          id="powerLabel"
+          style="
+          margin-top:10px;
+          font-size:18px;">
+        </p>
+
+        <br>
+
+        <button
+          onclick="saveFavorite()">
+
+            ⭐ Save To Garage
+
+        </button>
+
+    </div>
+
+    <div
+      id="specsGrid"
+      class="specs-grid">
+    </div>
+
 </div>
+  
 </div>
 
 <script>
@@ -308,7 +452,24 @@ let favorites=JSON.parse(localStorage.getItem('garage')||'[]');
 let historyData=JSON.parse(localStorage.getItem('history')||'[]');
 
 function renderGarage(){
- document.getElementById('garage').innerHTML=favorites.join('<br>')||'No saved cars';
+
+ let html='';
+
+ favorites.forEach(car=>{
+
+   html+=`
+   <div class="garage-item">
+      ${car}
+   </div>
+   `;
+
+ });
+
+ document.getElementById(
+   'garage'
+ ).innerHTML=
+ html || 'No saved cars';
+
 }
 function renderHistory(){
  document.getElementById('history').innerHTML=historyData.slice(-10).reverse().join('<br>')||'No searches';
@@ -372,9 +533,31 @@ async function searchCar(){
 
  let html='';
  for(const [k,v] of Object.entries(car.specs)){
-   html+=`<div class="spec"><b>${k}</b><br>${v}</div>`;
+html+=`
+<div class="spec-box">
+
+   <div class="spec-title">
+      ${k}
+   </div>
+
+   <div class="spec-value">
+      ${v}
+   </div>
+
+</div>
+`;
  }
  document.getElementById('specsGrid').innerHTML=html;
+}
+
+function quickSearch(car){
+
+ document.getElementById(
+   'searchInput'
+ ).value = car;
+
+ searchCar();
+
 }
 
 function saveFavorite(){
