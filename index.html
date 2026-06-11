@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Car Visualizer V2</title>
 <style>
+  .thumbnail-gallery{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    padding:15px;
+}
+
+.thumbnail-gallery img{
+    width:120px;
+    height:80px;
+    object-fit:cover;
+    border-radius:10px;
+    cursor:pointer;
+    border:2px solid transparent;
+}
+
+.thumbnail-gallery img:hover{
+    border-color:#4e8ef7;
+}
 *{
   margin:0;
   padding:0;
@@ -316,6 +335,9 @@ button:hover{
     <input
       id="apiKey"
       placeholder="Groq API Key">
+  <input
+  id="pexelsKey"
+  placeholder="Pexels API Key">
 
     <br><br>
 
@@ -413,6 +435,10 @@ style="display:none">
   id="carImage"
   class="car-image"
   style="display:none;">
+  <div
+  id="thumbnailGallery"
+  class="thumbnail-gallery">
+</div>
   
     <div class="card-header">
 
@@ -512,7 +538,69 @@ function getClass(hp){
  return 'Road Car';
 }
 
+async function loadCarImages(carName){
+
+    const pexelsKey=
+    document.getElementById('pexelsKey').value.trim();
+
+    if(!pexelsKey)return;
+
+    try{
+
+        const response=await fetch(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(carName+" car")}&per_page=8`,
+        {
+            headers:{
+                Authorization:pexelsKey
+            }
+        });
+
+        const data=await response.json();
+
+        if(!data.photos)return;
+
+        const mainImage=
+        document.getElementById('carImage');
+
+        mainImage.src=
+        data.photos[0].src.large;
+
+        mainImage.style.display='block';
+
+        const gallery=
+        document.getElementById('thumbnailGallery');
+
+        gallery.innerHTML='';
+
+        data.photos.forEach(photo=>{
+
+            const img=
+            document.createElement('img');
+
+            img.src=
+            photo.src.medium;
+
+            img.onclick=()=>{
+
+                mainImage.src=
+                photo.src.large;
+
+            };
+
+            gallery.appendChild(img);
+
+        });
+
+    }catch(err){
+
+        console.error(err);
+
+    }
+
+}
+
 async function searchCar(){
+  
  const query=document.getElementById('searchInput').value.trim();
   document.getElementById(
 'loadingPanel'
@@ -565,17 +653,14 @@ document.getElementById(
 },500);
  document.getElementById('carCard').style.display='block';
  document.getElementById('carName').textContent=car.make+" "+car.model;
+  loadCarImages(
+car.make+" "+car.model
+);
  document.getElementById('carTagline').textContent=car.tagline;
  document.getElementById('carClass').textContent=getClass(car.powerHp);
 
  document.getElementById('powerLabel').textContent=car.powerHp+" hp";
  document.getElementById('powerFill').style.width=Math.min(100,car.powerHp/15)+'%';
-
- if(car.imageUrl){
-  const img=document.getElementById('carImage');
-  img.src=car.imageUrl;
-  img.style.display='block';
- }
 
  let html='';
  for(const [k,v] of Object.entries(car.specs)){
