@@ -546,9 +546,10 @@ async function loadCarImages(carName){
     if(!pexelsKey)return;
 
     try{
-
+        document.getElementById('carImage').src =
+         'https://via.placeholder.com/1200x700?text=Loading+Images';
         const response=await fetch(
-        `https://api.pexels.com/v1/search?query=${encodeURIComponent(carName+" car")}&per_page=8`,
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(carName)}&per_page=8`
         {
             headers:{
                 Authorization:pexelsKey
@@ -610,8 +611,9 @@ document.getElementById(
 'loadingBar'
 ).style.width='30%';
  const apiKey=document.getElementById('apiKey').value.trim();
- if(!query||!apiKey)return alert('Enter car and API key');
-
+ if(!query || !apiKey)
+    return alert('Enter car and Groq API key');
+  
  historyData.push(query);
  localStorage.setItem('history',JSON.stringify(historyData));
  renderHistory();
@@ -642,7 +644,16 @@ document.getElementById(
 ).style.width='100%';
  let text=data.choices[0].message.content.trim();
  text=text.replace(/```json|```/g,'');
- const car=JSON.parse(text);
+ let car;
+
+try{
+    car=JSON.parse(text);
+}
+catch(err){
+    alert("Groq returned invalid data");
+    console.error(text);
+    return;
+}
 
   setTimeout(()=>{
 
